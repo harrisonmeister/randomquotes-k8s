@@ -17,11 +17,15 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       VERSION: ${{ steps.gitversion.outputs.semVer }}
+      COMMIT_MESSAGE: ${{ steps.gitversion.outputs.COMMIT_MESSAGE }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Capture last commit message from repo
+        id: commit-msg
+        run: echo "message=$(git log -1 --pretty=%B)" >> "$GITHUB_OUTPUT"
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.2.1
         with:
@@ -162,9 +166,7 @@ jobs:
           path: k8s
           ref: main
           fetch-depth: 0
-      - name: Capture last commit message from repo
-        id: commit-msg
-        run: echo "COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> $GITHUB_ENV
+      
       - name: Bump image tag in dev overlay
         run: |
           cd k8s/k8s/overlays/dev
@@ -176,5 +178,5 @@ jobs:
           git config user.name "${{ secrets.GIT_USER_NAME }}"
           git config user.email "${{ secrets.GIT_USER_EMAIL }}"
           git add k8s/overlays/dev/kustomization.yaml
-          git commit -m "$COMMIT_MESSAGE"
+          git commit -m "${{ needs.determine-version.outputs.COMMIT_MESSAGE}}"
           git push origin main
