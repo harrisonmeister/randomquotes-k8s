@@ -162,12 +162,9 @@ jobs:
           path: k8s
           ref: main
           fetch-depth: 0
-      - name: Capture last commit message from app repo
-        id: commitmsg
-        run: |
-          echo "COMMIT_MESSAGE<<EOF" >> $GITHUB_OUTPUT
-          git log -1 --pretty=%B >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+      - name: Capture last commit message from repo
+        id: commit-msg
+        run: echo "COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> $GITHUB_ENV
       - name: Bump image tag in dev overlay
         run: |
           cd k8s/k8s/overlays/dev
@@ -179,5 +176,5 @@ jobs:
           git config user.name "${{ secrets.GIT_USER_NAME }}"
           git config user.email "${{ secrets.GIT_USER_EMAIL }}"
           git add k8s/overlays/dev/kustomization.yaml
-          git commit -m "${{ steps.commitmsg.outputs.COMMIT_MESSAGE }}"
+          git commit -m "$COMMIT_MESSAGE"
           git push origin main
