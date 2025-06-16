@@ -16,7 +16,7 @@ jobs:
   determine-version:
     runs-on: ubuntu-latest
     outputs:
-      VERSION: ${{ steps.gitversion.outputs.MajorMinorPatch }}
+      VERSION: ${{ steps.gitversion.outputs.semVer }}
       COMMIT_MESSAGE: ${{ steps.commit-msg.outputs.COMMIT_MESSAGE }}
     steps:
       - name: Checkout code
