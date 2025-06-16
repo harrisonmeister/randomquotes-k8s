@@ -28,7 +28,7 @@ FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
-ENV RANDOM_SECRET_PHRASE="Default Phrase"
+ENV RANDOM_PHRASE="Default Phrase"
 ENV ASPNETCORE_URLS="http://+:8080"
 ENV ASPNETCORE_ENVIRONMENT="Production"
 ENTRYPOINT ["dotnet", "RandomQuotes.Web.dll"]

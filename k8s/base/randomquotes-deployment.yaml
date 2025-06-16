@@ -34,7 +34,7 @@ spec:
               memory: "128Mi"
               cpu: "500m"
           env:
-            - name: RANDOM_SECRET_PHRASE
+            - name: RANDOM_PHRASE
               valueFrom:
                 secretKeyRef:
                   name: random-quotes-secrets

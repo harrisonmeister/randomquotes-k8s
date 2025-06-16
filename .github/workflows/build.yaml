@@ -1,4 +1,4 @@
-name: Build and Promote Image to Dev
+name: Build randomquotes-k8s image
 
 on:
   push:
@@ -76,7 +76,7 @@ jobs:
         id: build  
         uses: docker/build-push-action@v5
         with:
-          context: src/RandomQuotes.Web
+          file: src/RandomQuotes.Web/Dockerfile
           platforms: ${{ matrix.platform }}
           provenance: false
           build-args: |
