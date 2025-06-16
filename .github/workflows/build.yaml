@@ -16,8 +16,8 @@ jobs:
   determine-version:
     runs-on: ubuntu-latest
     outputs:
-      VERSION: ${{ steps.gitversion.outputs.semVer }}
-      COMMIT_MESSAGE: ${{ steps.gitversion.outputs.COMMIT_MESSAGE }}
+      VERSION: ${{ steps.gitversion.outputs.MajorMinorPatch }}
+      COMMIT_MESSAGE: ${{ steps.commit-msg.outputs.COMMIT_MESSAGE }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -170,7 +170,7 @@ jobs:
       - name: Bump image tag in dev overlay
         run: |
           cd k8s/k8s/overlays/dev
-          yq e -i '.images[0].newTag = "${{ steps.gitversion.outputs.semVer }}"' kustomization.yaml
+          yq e -i '.images[0].newTag = "${{ needs.determine-version.outputs.VERSION }}"' kustomization.yaml
 
       - name: Commit and push changes to GitOps repo
         run: |
