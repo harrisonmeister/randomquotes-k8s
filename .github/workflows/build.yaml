@@ -135,14 +135,16 @@ jobs:
   gitops-enrich-image:
     needs: [determine-version, build-image, merge]
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.determine-version.outputs.VERSION }}
     steps:
-      - name: Report Image to Codefresh
+      - name: Report Image to GitOps Cloud
         uses: codefresh-io/codefresh-report-image@latest
         with:
           CF_RUNTIME_NAME: 'codefresh-local'
           CF_API_KEY: '${{ secrets.CF_USER_TOKEN }}'
           CF_CONTAINER_REGISTRY_INTEGRATION: 'harrisonmeister-dockerhub'
-          CF_IMAGE: '${{ env.REGISTRY_IMAGE }}:${{ steps.gitversion.outputs.semVer }}'
+          CF_IMAGE: '${{ env.REGISTRY_IMAGE }}:${{ env.VERSION }}'
           CF_GIT_BRANCH: '${{ github.ref_name }}'
           CF_GITHUB_TOKEN: '${{ secrets.CF_GITHUB_TOKEN }}'
           CF_ISSUE_TRACKING_INTEGRATION: 'harrisonmeister-jira'
