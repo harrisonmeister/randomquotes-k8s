@@ -9,38 +9,62 @@ on:
       - '.github/**'
   workflow_dispatch:
 
+env:
+   REGISTRY_IMAGE: ${{ secrets.DOCKERHUB_REPO }}
+
 jobs:
-  build-push-and-promote:
+  determine-version:
     runs-on: ubuntu-latest
-
+    outputs:
+      VERSION: ${{ steps.gitversion.outputs.semVer }}
     steps:
-      - name: Checkout application code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up .NET SDK
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
-
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v0.9.14
         with:
           versionSpec: 5.x
-
       - name: Determine version with GitVersion
         id: gitversion
         uses: gittools/actions/gitversion/execute@v0.9.14
         with:
           additionalArguments: /overrideconfig mode=Mainline
 
-      - name: Capture last commit message from app repo
-        id: commitmsg
+  build-image:
+    needs: [determine-version]
+    env:
+      VERSION: ${{ needs.determine-version.outputs.VERSION }}
+    strategy:
+      matrix:
+        os: 
+          - ubuntu-latest
+        platform:
+          - linux/amd64
+          - linux/arm64
+          - linux/arm/v7
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Prepare
         run: |
-          echo "COMMIT_MESSAGE<<EOF" >> $GITHUB_OUTPUT
-          git log -1 --pretty=%B >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV 
+          echo "PLATFORM_ARCH=${platform//[linux\/]/}" >> $GITHUB_ENV
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ matrix.platform }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3          
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -48,32 +72,87 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Build and push by digest
+        id: build  
+        uses: docker/build-push-action@v5
+        with:
+          context: ./RandomQuotes.Web/Dockerfile
+          platforms: ${{ matrix.platform }}
+          provenance: false
+          build-args: |
+            TARGETARCH_ARG=true
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+                    
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+  merge:
+    needs: [determine-version, build-image]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.determine-version.outputs.VERSION }}
+
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Build and push multi-arch Docker image
-        working-directory: src
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+          tags: |
+            ${{ env.VERSION }}
+            latest
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PAT }}
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
         run: |
-          docker buildx build --push \
-            --platform linux/amd64,linux/arm64,linux/arm/v7 \
-            --build-arg TARGETARCH_ARG=true \
-            -f ./RandomQuotes.Web/Dockerfile \
-            -t ${{ secrets.DOCKERHUB_REPO }}:${{ steps.gitversion.outputs.semVer }} \
-            -t ${{ secrets.DOCKERHUB_REPO }}:latest .
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)          
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}          
 
+  gitops-enrich-image:
+    needs: [determine-version, build-image, merge]
+    runs-on: ubuntu-latest
+    steps:
       - name: Report Image to Codefresh
         uses: codefresh-io/codefresh-report-image@latest
         with:
           CF_RUNTIME_NAME: 'codefresh-local'
           CF_API_KEY: '${{ secrets.CF_USER_TOKEN }}'
           CF_CONTAINER_REGISTRY_INTEGRATION: 'harrisonmeister-dockerhub'
-          CF_IMAGE: '${{ secrets.DOCKERHUB_REPO }}:${{ steps.gitversion.outputs.semVer }}'
+          CF_IMAGE: '${{ env.REGISTRY_IMAGE }}:${{ steps.gitversion.outputs.semVer }}'
           CF_GIT_BRANCH: '${{ github.ref_name }}'
           CF_GITHUB_TOKEN: '${{ secrets.CF_GITHUB_TOKEN }}'
           CF_ISSUE_TRACKING_INTEGRATION: 'harrisonmeister-jira'
           CF_JIRA_PROJECT_PREFIX: 'RK'
           CF_JIRA_MESSAGE: 'RK-1'
-
+  gitops-update-repo:
+    needs: [determine-version, build-image, merge, gitops-enrich-image]
+    runs-on: ubuntu-latest
+    steps:
       - name: Clone GitOps repo
         uses: actions/checkout@v4
         with:
@@ -82,7 +161,12 @@ jobs:
           path: k8s
           ref: main
           fetch-depth: 0
-
+      - name: Capture last commit message from app repo
+        id: commitmsg
+        run: |
+          echo "COMMIT_MESSAGE<<EOF" >> $GITHUB_OUTPUT
+          git log -1 --pretty=%B >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
       - name: Bump image tag in dev overlay
         run: |
           cd k8s/k8s/overlays/dev
