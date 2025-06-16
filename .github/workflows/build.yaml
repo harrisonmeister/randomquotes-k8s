@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 0
       - name: Capture last commit message from repo
         id: commit-msg
-        run: echo "message=$(git log -1 --pretty=%B)" >> "$GITHUB_OUTPUT"
+        run: echo "COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> "$GITHUB_OUTPUT"
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.2.1
         with:
