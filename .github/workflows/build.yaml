@@ -18,6 +18,8 @@ jobs:
     outputs:
       VERSION: ${{ steps.gitversion.outputs.semVer }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v0.9.14
         with:
