@@ -30,7 +30,8 @@ jobs:
         id: gitversion
         uses: gittools/actions/gitversion/execute@v3.2.1
         with:
-          overrideConfig: mode=Mainline
+          overrideConfig: |
+            mode: Mainline
 
   build-image:
     needs: [determine-version]
