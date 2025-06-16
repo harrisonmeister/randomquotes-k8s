@@ -76,6 +76,7 @@ jobs:
         id: build  
         uses: docker/build-push-action@v5
         with:
+          context: src
           file: src/RandomQuotes.Web/Dockerfile
           platforms: ${{ matrix.platform }}
           provenance: false
