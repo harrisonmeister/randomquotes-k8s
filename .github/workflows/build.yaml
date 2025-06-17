@@ -16,7 +16,7 @@ jobs:
   determine-version:
     runs-on: ubuntu-latest
     outputs:
-      VERSION: ${{ steps.gitversion.outputs.semVer }}
+      VERSION: ${{ steps.set-version.outputs.VERSION }}
       COMMIT_MESSAGE: ${{ steps.commit-msg.outputs.COMMIT_MESSAGE }}
     steps:
       - name: Checkout code
@@ -26,16 +26,10 @@ jobs:
       - name: Capture last commit message from repo
         id: commit-msg
         run: echo "COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> "$GITHUB_OUTPUT"
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v3.2.1
-        with:
-          versionSpec: 6.x
-      - name: Determine version with GitVersion
-        id: gitversion
-        uses: gittools/actions/gitversion/execute@v3.2.1
-        with:
-          overrideConfig: |
-            mode: Mainline
+      - name: Set version
+        id: set-version
+        run: echo "VERSION=$(date +'%Y%m%d').${{ github.run_number }}.${{ github.run_attempt }}" >> $GITHUB_OUTPUT
+        shell: bash
 
   build-image:
     needs: [determine-version]

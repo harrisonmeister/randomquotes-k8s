@@ -22,7 +22,7 @@
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
       "environmentVariables": {
         "ASPNETCORE_HTTP_PORTS": "8080",
-        "RANDOM_SECRET_PHRASE": "Launch phrase example"
+        "RANDOM_PHRASE": "Launch phrase example"
       },
       "publishAllPorts": true
     }
