@@ -10,4 +10,4 @@ secretGenerator:
 images:
   - name: harrisonmeister/randomquotes-k8s
     newName: harrisonmeister/randomquotes-k8s
-    newTag: "1.0.1-6"
+    newTag: "20250617.22.1"
