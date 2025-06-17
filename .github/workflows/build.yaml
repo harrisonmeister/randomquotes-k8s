@@ -160,7 +160,6 @@ jobs:
         with:
           repository: ${{ secrets.GIT_GITOPS_REPO }}
           token: ${{ secrets.GIT_USER_TOKEN }}
-          path: randomquotes
           ref: main
           fetch-depth: 0
       
