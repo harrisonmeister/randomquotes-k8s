@@ -13,7 +13,6 @@ on:
 
 env:
    REGISTRY_IMAGE: ${{ secrets.DOCKERHUB_REPO }}
-
 jobs:
   determine-version:
     runs-on: ubuntu-latest
