@@ -172,5 +172,5 @@ jobs:
           git config user.name "${{ secrets.GIT_USER_NAME }}"
           git config user.email "${{ secrets.GIT_USER_EMAIL }}"
           git add k8s/overlays/dev/kustomization.yaml
-          git commit -m "Auto Promotion: ${{ needs.determine-version.outputs.COMMIT_MESSAGE}}"
+          git commit -m "Auto-Promotion: ${{ needs.determine-version.outputs.COMMIT_MESSAGE}}"
           git push origin main
