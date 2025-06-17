@@ -10,7 +10,6 @@ on:
       - '.github/**'
   schedule:
      - cron: '0 6 * * 1-5'
-
 env:
    REGISTRY_IMAGE: ${{ secrets.DOCKERHUB_REPO }}
 jobs:
