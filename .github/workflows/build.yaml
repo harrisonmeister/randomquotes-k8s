@@ -160,20 +160,20 @@ jobs:
         with:
           repository: ${{ secrets.GIT_GITOPS_REPO }}
           token: ${{ secrets.GIT_USER_TOKEN }}
-          path: k8s
+          path: randomquotes
           ref: main
           fetch-depth: 0
       
       - name: Bump image tag in dev overlay
         run: |
-          cd randomquotes/overlays/dev
+          cd overlays/dev
           yq e -i '.images[0].newTag = "${{ needs.determine-version.outputs.VERSION }}"' kustomization.yaml
 
       - name: Commit and push changes to GitOps repo
         run: |
-          cd k8s
+          cd randomquotes
           git config user.name "${{ secrets.GIT_USER_NAME }}"
           git config user.email "${{ secrets.GIT_USER_EMAIL }}"
-          git add randomquotes/overlays/dev/kustomization.yaml
+          git add overlays/dev/kustomization.yaml
           git commit -m "Auto-Promotion: ${{ needs.determine-version.outputs.COMMIT_MESSAGE}}"
           git push origin main
