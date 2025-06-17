@@ -140,7 +140,7 @@ jobs:
       - name: Report Image to GitOps Cloud
         uses: codefresh-io/codefresh-report-image@latest
         with:
-          CF_RUNTIME_NAME: 'codefresh-local'
+          CF_RUNTIME_NAME: 'local-k3s02'
           CF_API_KEY: '${{ secrets.CF_USER_TOKEN }}'
           CF_CONTAINER_REGISTRY_INTEGRATION: 'harrisonmeister-dockerhub'
           CF_IMAGE: '${{ env.REGISTRY_IMAGE }}:${{ env.VERSION }}'
