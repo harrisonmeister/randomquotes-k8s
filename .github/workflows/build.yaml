@@ -166,7 +166,7 @@ jobs:
       
       - name: Bump image tag in dev overlay
         run: |
-          cd overlays/dev
+          cd randomquotes/overlays/dev
           yq e -i '.images[0].newTag = "${{ needs.determine-version.outputs.VERSION }}"' kustomization.yaml
 
       - name: Commit and push changes to GitOps repo
