@@ -25,7 +25,10 @@ jobs:
           fetch-depth: 0
       - name: Capture last commit message from repo
         id: commit-msg
-        run: echo "COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "COMMIT_MESSAGE<<EOF" >> "$GITHUB_OUTPUT"
+          git log -1 --pretty=%B >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Set version
         id: set-version
         run: echo "VERSION=$(date +'%Y%m%d').${{ github.run_number }}.${{ github.run_attempt }}" >> $GITHUB_OUTPUT
